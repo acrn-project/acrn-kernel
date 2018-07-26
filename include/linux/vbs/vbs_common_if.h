@@ -92,5 +92,8 @@ struct vbs_dev_info {
 
 #define VBS_SET_DEV _IOW(VBS_IOCTL, 0x00, struct vbs_dev_info)
 #define VBS_SET_VQ _IOW(VBS_IOCTL, 0x01, struct vbs_vqs_info)
+#define VBS_ECHO_SET_BUFSIZE _IOW(VBS_IOCTL, 0x10, int)
+#define VBS_ECHO_SET_COUNT _IOW(VBS_IOCTL, 0x11, int)
+
 
 #endif

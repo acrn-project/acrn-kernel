@@ -4,3 +4,4 @@ obj-$(CONFIG_VBS)		+= vbs.o
 obj-$(CONFIG_VBS)		+= vq.o
 
 obj-$(CONFIG_VBS_RNG)		+= vbs_rng.o
+obj-y				+= vbs_echo.o
