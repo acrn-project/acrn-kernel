@@ -443,12 +443,12 @@ static long vbs_echo_ioctl(struct file *f, unsigned int ioctl,
 
 		return r;
 
-	case VBS_RESET_DEV:
-		pr_err("VBS_RESET_DEV ioctl:\n");
-		vbs_echo_stop(echo);
-		vbs_echo_flush(echo);
-		r = vbs_echo_reset(echo);
-		return r;
+	//case VBS_RESET_DEV:
+	//	pr_err("VBS_RESET_DEV ioctl:\n");
+	//	vbs_echo_stop(echo);
+	//	vbs_echo_flush(echo);
+	//	r = vbs_echo_reset(echo);
+	//	return r;
 
 	case VBS_ECHO_SET_BUFSIZE: {
 		int buf_size;
@@ -489,7 +489,7 @@ static long vbs_echo_reset(struct vbs_echo *echo)
 	pr_err("%s, cur_cnt = %d, total_cnt = %d\n",
 		__func__, echo->cur_cnt, echo->count);
 	echo->reset = true;
-	return virtio_dev_reset(&echo->dev);
+	return 0;
 }
 
 /* device specific function */
