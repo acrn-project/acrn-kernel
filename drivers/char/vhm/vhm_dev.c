@@ -96,7 +96,8 @@
 static int    major;
 static struct class *vhm_class;
 static struct device *vhm_device;
-static struct tasklet_struct vhm_io_req_tasklet;
+static struct workqueue_struct *vhm_wq;
+static struct work_struct vhm_io_req_work;
 
 static int vhm_dev_open(struct inode *inodep, struct file *filep)
 {
@@ -430,16 +431,7 @@ create_vm_fail:
 		/*
 		 * TODO: Query VM status with additional hypercall.
 		 * VM should be in paused status.
-		 *
-		 * In SMP SOS, we need flush the current pending ioreq dispatch
-		 * tasklet and finish it before clearing all ioreq of this VM.
-		 * With tasklet_kill, there still be a very rare race which
-		 * might lost one ioreq tasklet for other VMs. So arm one after
-		 * the clearing. It's harmless.
 		 */
-		tasklet_schedule(&vhm_io_req_tasklet);
-		tasklet_kill(&vhm_io_req_tasklet);
-		tasklet_schedule(&vhm_io_req_tasklet);
 		acrn_ioreq_clear_request(vm);
 		break;
 	}
@@ -696,7 +688,7 @@ create_vm_fail:
 	return ret;
 }
 
-static void io_req_tasklet(unsigned long data)
+static void io_req_work(struct work_struct *w_arg)
 {
 	struct vhm_vm *vm;
 
@@ -712,7 +704,7 @@ static void io_req_tasklet(unsigned long data)
 
 static void vhm_intr_handler(void)
 {
-	tasklet_schedule(&vhm_io_req_tasklet);
+	queue_work(vhm_wq, &vhm_io_req_work);
 }
 
 int vhm_vm_destroy(struct vhm_vm *vm)
@@ -804,7 +796,7 @@ static int __init vhm_init(void)
 	if (x86_hyper_type != X86_HYPER_ACRN)
 		return -ENODEV;
 
-	pr_info("vhm: initializing\n");
+	pr_err("ddqre: vhm: initializing\n");
 
 	if (hcall_get_api_version(virt_to_phys(&api_version)) < 0) {
 		pr_err("vhm: failed to get api version from Hypervisor !\n");
@@ -848,7 +840,8 @@ static int __init vhm_init(void)
 		return PTR_ERR(vhm_device);
 	}
 	pr_info("register IPI handler\n");
-	tasklet_init(&vhm_io_req_tasklet, io_req_tasklet, 0);
+	vhm_wq = alloc_workqueue("vhm_wq", 0, 0);
+	INIT_WORK(&vhm_io_req_work, io_req_work);
 
 	acrn_setup_intr_irq(vhm_intr_handler);
 	if (sysfs_create_group(&vhm_device->kobj, &vhm_attr_group)) {
@@ -864,7 +857,7 @@ static int __init vhm_init(void)
 }
 static void __exit vhm_exit(void)
 {
-	tasklet_kill(&vhm_io_req_tasklet);
+	destroy_workqueue(vhm_wq);
 	acrn_remove_intr_irq();
 	device_destroy(vhm_class, MKDEV(major, 0));
 	class_unregister(vhm_class);
