@@ -1,9 +1,7 @@
-# SPDX-License-Identifier: GPL-2.0-only
 # OP-TEE Trusted Execution Environment Configuration
 config OPTEE
 	tristate "OP-TEE"
-	depends on HAVE_ARM_SMCCC
-	depends on MMU
+	depends on HAVE_ARM_SMCCC || X86_64
 	help
 	  This implements the OP-TEE Trusted Execution Environment (TEE)
 	  driver.
